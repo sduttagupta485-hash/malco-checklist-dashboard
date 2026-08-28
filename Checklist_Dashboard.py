@@ -2,6 +2,11 @@ import streamlit as st
 import gspread
 import pandas as pd
 import datetime
+import hmac
+import hashlib
+import base64
+import time
+import json
 from google.oauth2.service_account import Credentials
 from streamlit_autorefresh import st_autorefresh
 import streamlit_authenticator as stauth
@@ -19,7 +24,7 @@ credentials = {
         "mahesh": {
             "name": "Mahesh Tiwari",
             "email": "stores@malcorp.co.in",
-            "password": " $2b$12$sTAQvUOsJf0icXVuHTPLhOToBdo1n7/PIXo/28fveZ4ihYHlAqq.S",
+            "password": "$2b$12$sTAQvUOsJf0icXVuHTPLhOToBdo1n7/PIXo/28fveZ4ihYHlAqq.S",
             "role": "doer"
         },
         "trithankar": {
@@ -86,22 +91,72 @@ authenticator = stauth.Authenticate(
     cookie_expiry_days=7
 )
 
-authenticator.login()
+# =====================================================================
+# SSO: verify a signed token passed from the HTML portal (?token=...)
+# =====================================================================
+def verify_sso_token(token, secret):
+    try:
+        payload_b64, signature = token.split(".")
+        expected_sig = hmac.new(
+            secret.encode(),
+            payload_b64.encode(),
+            hashlib.sha256
+        ).hexdigest()
 
-if st.session_state["authentication_status"] is False:
-    st.error("Username or password is incorrect")
-    st.stop()
-elif st.session_state["authentication_status"] is None:
-    st.warning("Please enter your username and password")
-    st.stop()
+        if not hmac.compare_digest(signature, expected_sig):
+            return None  # tampered or forged
 
-name = st.session_state["name"]
-username = st.session_state["username"]
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64 + "=="))
 
-authenticator.logout("Logout", "sidebar")
-st.sidebar.write(f"Logged in as: **{name}**")
-logged_in_email = credentials["usernames"][username]["email"]
-logged_in_role = credentials["usernames"][username].get("role", "doer")
+        if payload["expires"] < time.time():
+            return None  # expired
+
+        return payload["email"]
+    except Exception:
+        return None
+
+sso_email = None
+if "sso_secret" in st.secrets:
+    query_params = st.query_params
+    sso_token = query_params.get("token")
+    if sso_token:
+        sso_email = verify_sso_token(sso_token, st.secrets["sso_secret"])
+
+# ---------------- LOGIN: SSO first, normal login as fallback ----------------
+if sso_email:
+    matched_username = None
+    for uname, info in credentials["usernames"].items():
+        if info["email"].lower() == sso_email.lower():
+            matched_username = uname
+            break
+
+    if matched_username is None:
+        st.error(f"Your account ({sso_email}) was not recognized. Please contact MIS.")
+        st.stop()
+
+    name = credentials["usernames"][matched_username]["name"]
+    username = matched_username
+    logged_in_email = credentials["usernames"][matched_username]["email"]
+    logged_in_role = credentials["usernames"][matched_username].get("role", "doer")
+    st.sidebar.write(f"Logged in as: **{name}** (via portal)")
+
+else:
+    authenticator.login()
+
+    if st.session_state["authentication_status"] is False:
+        st.error("Username or password is incorrect")
+        st.stop()
+    elif st.session_state["authentication_status"] is None:
+        st.warning("Please enter your username and password")
+        st.stop()
+
+    name = st.session_state["name"]
+    username = st.session_state["username"]
+
+    authenticator.logout("Logout", "sidebar")
+    st.sidebar.write(f"Logged in as: **{name}**")
+    logged_in_email = credentials["usernames"][username]["email"]
+    logged_in_role = credentials["usernames"][username].get("role", "doer")
 
 # ---------------- GOOGLE CONNECTION (Service Account) ----------------
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets",
