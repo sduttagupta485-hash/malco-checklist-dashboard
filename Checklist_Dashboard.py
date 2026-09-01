@@ -104,33 +104,6 @@ authenticator = stauth.Authenticate(
 # =====================================================================
 # SSO: verify a signed token passed from the HTML portal (?token=...)
 # =====================================================================
-def verify_sso_token(token, secret):
-    try:
-        payload_b64, signature = token.split(".")
-        expected_sig = hmac.new(
-            secret.encode(),
-            payload_b64.encode(),
-            hashlib.sha256
-        ).hexdigest()
-
-        if not hmac.compare_digest(signature, expected_sig):
-            return None  # tampered or forged
-
-        payload = json.loads(base64.urlsafe_b64decode(payload_b64 + "=="))
-
-        if payload["expires"] < time.time():
-            return None  # expired
-
-        return payload["email"]
-    except Exception:
-        return None
-
-sso_email = None
-if "sso_secret" in st.secrets:
-    query_params = st.query_params
-    sso_token = query_params.get("token")
-    if sso_token:
-        sso_email = verify_sso_token(sso_token, st.secrets["sso_secret"])
 
 # ---------------- LOGIN: SSO first, normal login as fallback ----------------
 if sso_email:
