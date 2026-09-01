@@ -103,7 +103,44 @@ authenticator = stauth.Authenticate(
 
 # =====================================================================
 # SSO: verify a signed token passed from the HTML portal (?token=...)
+# ---- TEMPORARY DEBUG VERSION: shows the real reason on screen ----
 # =====================================================================
+def verify_sso_token(token, secret):
+    try:
+        payload_b64, signature = token.split(".")
+        expected_sig = hmac.new(
+            secret.encode(),
+            payload_b64.encode(),
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(signature, expected_sig):
+            st.error(f"DEBUG: signature mismatch. Got {signature[:12]}..., expected {expected_sig[:12]}...")
+            return None  # tampered or forged
+
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64 + "=="))
+
+        if payload["expires"] < time.time():
+            st.error(f"DEBUG: token expired. Expired at {payload['expires']}, now is {int(time.time())} ({int(time.time()) - payload['expires']} seconds late)")
+            return None  # expired
+
+        return payload["email"]
+    except Exception as e:
+        st.error(f"DEBUG: exception while verifying token: {e}")
+        return None
+
+sso_email = None
+if "sso_secret" not in st.secrets:
+    st.error("DEBUG: 'sso_secret' is not set in this app's Streamlit secrets at all.")
+else:
+    query_params = st.query_params
+    sso_token = query_params.get("token")
+    if not sso_token:
+        st.error("DEBUG: no ?token= found in the URL.")
+    else:
+        sso_email = verify_sso_token(sso_token, st.secrets["sso_secret"])
+        if sso_email:
+            st.success(f"DEBUG: token verified OK, email = {sso_email}")
 
 # ---------------- LOGIN: SSO first, normal login as fallback ----------------
 if sso_email:
