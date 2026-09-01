@@ -76,7 +76,6 @@ credentials = {
         "sanchali": {
             "name": "Sanchali Dutta Gupta",
             "email": "mis@malcorp.co.in",
-            "employee_id": " A3069",
             "password": "$2b$12$goj3e3beDIEuuCPb1oUqnubwuS69fse1Wxg9kUMFZKvH6MJXE.K/G",
             "role": "doer"
         },
