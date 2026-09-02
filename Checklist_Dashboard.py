@@ -103,7 +103,11 @@ authenticator = stauth.Authenticate(
 
 # =====================================================================
 # SSO: verify a signed token passed from the HTML portal (?token=...)
-# ---- TEMPORARY DEBUG VERSION: shows the real reason on screen ----
+# The token itself is only valid for a short window (it's a one-time
+# handoff key). Once verified, we remember the login in session_state
+# for the rest of this browser session — Streamlit reruns the whole
+# script on every click, so without this, the doer would get logged
+# out mid-task the moment the original token's window passed.
 # =====================================================================
 def verify_sso_token(token, secret):
     try:
@@ -115,32 +119,32 @@ def verify_sso_token(token, secret):
         ).hexdigest()
 
         if not hmac.compare_digest(signature, expected_sig):
-            st.error(f"DEBUG: signature mismatch. Got {signature[:12]}..., expected {expected_sig[:12]}...")
             return None  # tampered or forged
 
         payload = json.loads(base64.urlsafe_b64decode(payload_b64 + "=="))
 
         if payload["expires"] < time.time():
-            st.error(f"DEBUG: token expired. Expired at {payload['expires']}, now is {int(time.time())} ({int(time.time()) - payload['expires']} seconds late)")
             return None  # expired
 
         return payload["email"]
-    except Exception as e:
-        st.error(f"DEBUG: exception while verifying token: {e}")
+    except Exception:
         return None
 
-sso_email = None
-if "sso_secret" not in st.secrets:
-    st.error("DEBUG: 'sso_secret' is not set in this app's Streamlit secrets at all.")
-else:
+if "sso_email" not in st.session_state:
+    st.session_state["sso_email"] = None
+
+if st.session_state["sso_email"] is None and "sso_secret" in st.secrets:
     query_params = st.query_params
     sso_token = query_params.get("token")
-    if not sso_token:
-        st.error("DEBUG: no ?token= found in the URL.")
-    else:
-        sso_email = verify_sso_token(sso_token, st.secrets["sso_secret"])
-        if sso_email:
-            st.success(f"DEBUG: token verified OK, email = {sso_email}")
+    if sso_token:
+        verified_email = verify_sso_token(sso_token, st.secrets["sso_secret"])
+        if verified_email:
+            st.session_state["sso_email"] = verified_email
+            # Clean the one-time token out of the visible URL now that
+            # it's been used — nothing left to expire mid-task.
+            st.query_params.clear()
+
+sso_email = st.session_state["sso_email"]
 
 # ---------------- LOGIN: SSO first, normal login as fallback ----------------
 if sso_email:
