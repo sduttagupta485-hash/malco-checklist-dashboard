@@ -24,7 +24,7 @@ st.set_page_config(
 # the portal will automatically show whatever this app shows —
 # no changes needed on the portal side.
 # ============================================================
-SHEET_NAME = "Copy of MALCO_Checklist_Dashboard 26-08-2026"
+SHEET_NAME = "MALCO_Checklist_Dashboard"
 WORKSHEET_NAME = "Master"
 # ============================================================
 
@@ -73,12 +73,7 @@ credentials = {
             "password": "$2b$12$Kac4rQF041LeGj2egmMGJeQ3QYVGAJVmTYxH8mhMeb5aoDE7ot5D",
             "role": "doer"
         },
-        "sanchali": {
-            "name": "Sanchali Dutta Gupta",
-            "email": "mis@malcorp.co.in",
-            "password": "$2b$12$goj3e3beDIEuuCPb1oUqnubwuS69fse1Wxg9kUMFZKvH6MJXE.K/G",
-            "role": "doer"
-        },
+        
         "sanchita": {
             "name": "Sanchita Dewan Mukherjee",
             "email": "pc@malcorp.co.in",
