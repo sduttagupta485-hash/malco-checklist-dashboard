@@ -73,8 +73,8 @@ credentials = {
             "password": "$2b$12$Kac4rQF041LeGj2egmMGJeQ3QYVGAJVmTYxH8mhMeb5aoDE7ot5D",
             "role": "doer"
         },
-        "sanchali": {
-            "name": "Sanchali Dutta Gupta",
+        "md_admin": {
+            "name": "MD_ADMIN",
             "email": "mis@malcorp.co.in",
             "password": "$2b$12$goj3e3beDIEuuCPb1oUqnubwuS69fse1Wxg9kUMFZKvH6MJXE.K/G",
             "role": "md"
@@ -86,7 +86,7 @@ credentials = {
             "role": "pc"
         },
         "anirudha": {
-            "name": "Anirudha",
+            "name": "Mr. Anirudha Agarwal",
             "email": "anirudha@malcorp.co.in",
             # TEMP password: Anirudha@123 — change this via make_passwords.py
             # whenever convenient; not urgent if this account is SSO-only.
