@@ -73,17 +73,32 @@ credentials = {
             "password": "$2b$12$Kac4rQF041LeGj2egmMGJeQ3QYVGAJVmTYxH8mhMeb5aoDE7ot5D",
             "role": "doer"
         },
-        
+        "sanchali": {
+            "name": "Sanchali Dutta Gupta",
+            "email": "mis@malcorp.co.in",
+            "password": "$2b$12$goj3e3beDIEuuCPb1oUqnubwuS69fse1Wxg9kUMFZKvH6MJXE.K/G",
+            "role": "md"
+        },
         "sanchita": {
             "name": "Sanchita Dewan Mukherjee",
             "email": "pc@malcorp.co.in",
             "password": "$2b$12$z.gzhRtlJiHmO4WPbX7q9ekrqH.9aQSSwccNPdqJ7l5Xt6oFDmV/e",
             "role": "pc"
         },
-        "md_admin": {
-            "name": "Managing Director",
-            "email": "md@malcorp.co.in",
-            "password": "$2b$12$qS1HExtmuZI/ibJpSCdhI.Ti4IjkOUTJtzrL8oFPrYY09G4t1NECS",
+        "anirudha": {
+            "name": "Anirudha",
+            "email": "anirudha@malcorp.co.in",
+            # TEMP password: Anirudha@123 — change this via make_passwords.py
+            # whenever convenient; not urgent if this account is SSO-only.
+            "password": "$2b$12$bWE4V32VotXxJfPJlXcQleUmJIcrYcIBp.iC0.NVNPjj67g9uEGcK",
+            "role": "md"
+        },
+        "sales_dept": {
+            "name": "Sales Department",
+            "email": "sales@malcorp.co.in",
+            # TEMP password: Sales@123 — change this via make_passwords.py
+            # whenever convenient; not urgent if this account is SSO-only.
+            "password": "$2b$12$sfe9JXSraxGErE7yIDgKW.Yb5XVq.xmF7WkrWFTaUfRqA3qY.Y8e2",
             "role": "md"
         }
     }
@@ -176,6 +191,7 @@ else:
     st.sidebar.write(f"Logged in as: **{name}**")
     logged_in_email = credentials["usernames"][username]["email"]
     logged_in_role = credentials["usernames"][username].get("role", "doer")
+
 
 # ---------------- GOOGLE CONNECTION (Service Account) ----------------
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets",
