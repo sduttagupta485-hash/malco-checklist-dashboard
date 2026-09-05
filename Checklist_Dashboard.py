@@ -136,25 +136,32 @@ def verify_sso_token(token, secret):
         if payload["expires"] < time.time():
             return None  # expired
 
-        return payload["email"]
+        # requestedView tells us WHICH TILE the person clicked on the
+        # portal ("doer", "pc", or "md"). Older tokens minted before this
+        # feature existed won't have it — we treat that as None and fall
+        # back to role-based behavior so nothing breaks mid-rollout.
+        return {"email": payload["email"], "requestedView": payload.get("requestedView")}
     except Exception:
         return None
 
 if "sso_email" not in st.session_state:
     st.session_state["sso_email"] = None
+    st.session_state["sso_requested_view"] = None
 
 if st.session_state["sso_email"] is None and "sso_secret" in st.secrets:
     query_params = st.query_params
     sso_token = query_params.get("token")
     if sso_token:
-        verified_email = verify_sso_token(sso_token, st.secrets["sso_secret"])
-        if verified_email:
-            st.session_state["sso_email"] = verified_email
+        verified = verify_sso_token(sso_token, st.secrets["sso_secret"])
+        if verified:
+            st.session_state["sso_email"] = verified["email"]
+            st.session_state["sso_requested_view"] = verified["requestedView"]
             # Clean the one-time token out of the visible URL now that
             # it's been used — nothing left to expire mid-task.
             st.query_params.clear()
 
 sso_email = st.session_state["sso_email"]
+sso_requested_view = st.session_state.get("sso_requested_view")
 
 # ---------------- LOGIN: SSO first, normal login as fallback ----------------
 if sso_email:
@@ -171,7 +178,29 @@ if sso_email:
     name = credentials["usernames"][matched_username]["name"]
     username = matched_username
     logged_in_email = credentials["usernames"][matched_username]["email"]
-    logged_in_role = credentials["usernames"][matched_username].get("role", "doer")
+    actual_role = credentials["usernames"][matched_username].get("role", "doer")
+
+    # Enforce that the tile clicked on the portal matches what this
+    # person is actually permitted to see. Old tokens with no
+    # requestedView (pre-rollout) fall back to just using actual_role,
+    # so nothing breaks while the portal side is being updated.
+    if sso_requested_view is None:
+        logged_in_role = actual_role
+    elif sso_requested_view in ("md", "pc"):
+        if actual_role in ("md", "pc"):
+            logged_in_role = actual_role
+        else:
+            st.error("You don't have permission to view the Managing Director / Process Coordinator dashboard.")
+            st.stop()
+    elif sso_requested_view == "doer":
+        if actual_role == "doer":
+            logged_in_role = "doer"
+        else:
+            st.info("You don't have a personal checklist assigned to you. Please use the Managing Director tile on the portal to access your dashboard.")
+            st.stop()
+    else:
+        logged_in_role = actual_role
+
     st.sidebar.write(f"Logged in as: **{name}** (via portal)")
 
 else:
